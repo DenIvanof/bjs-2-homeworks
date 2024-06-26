@@ -1,20 +1,19 @@
 //з1
-const md5 = require('js-md5');
 function cachingDecoratorNew(func) {
   let cache = [];
   function wrapper(...args) {
-    const hash = md5(JSON.stringify(args));
+    const hash = md5(args);
     let objectInCache = cache.find(item => item.hash === hash);
     if (objectInCache) {
-      console.log("Из кэша: " + objectInCache.value, cache);
-      return "Из кэша: " + objectInCache.value;
+      console.log("Из кеша: " + objectInCache.value);
+      return "Из кеша: " + objectInCache.value;
     }
     let result = func(...args);
-    cache.push({ hash: hash, value: result });
+    cache.push({ "hash": hash, "value": result });
     if (cache.length > 5) {
       cache.shift();
     }
-    console.log("Вычисляем: " + result, cache);
+    console.log("Вычисляем: " + result);
     return "Вычисляем: " + result;
   }
   return wrapper;
@@ -26,23 +25,44 @@ function debounceDecoratorNew(func, delay) {
   let count = 0;  
   let allCount = 0;
   function wrapper(...args) {
-    if(timeoutId) {
-      console.log("уже есть таймаут", args);
+
+    if(timeoutId) {      
       clearTimeout(timeoutId);
       allCount++;
     }
     if (!timeoutId) {
-      console.log("первый сигнал", args);
-      func.apply(this, args);
-      count++;
+      func(args);
+      wrapper.count++;
     }
     timeoutId = setTimeout(() => {
-      console.log("задержка больше 2000млсек, сработал таймаут");
       count++;
       func.apply(this, args);
       wrapper.count = count;
     }, delay);
-    wrapper.allCount;
+    wrapper.allCount =allCount;
     }
   return wrapper;
+  }
+
+  function debounceDecoratorNew(func, delay) {
+    let timeoutId;
+    let count = 0;
+    let allCount = 0;
+    let isTrottled = false;
+    function wrapper(...args) {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout( () => {
+        func(args);
+        wrapper.count++;
+      }, delay);
+      if (!isTrottled) {
+        func(...args);
+        wrapper.count++;
+        isTrottled = true;
+      }
+      wrapper.allCount++;
+    }
+    wrapper.count = count;
+    wrapper.allCount = allCount;
+    return wrapper;
   }
